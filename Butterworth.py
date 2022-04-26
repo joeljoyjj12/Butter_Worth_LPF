@@ -31,7 +31,7 @@ Omega_c_w=(2/Td)*np.tan(2*np.pi*fc/2/fs);
 # [Bn,An] = butter(1,Omega_c_w,analog=True); 
 # Hsn = tf(Bn,An); # H(s) 
 
-order=int(input('Enter order of filter\n'))
+order=6 #Order input
 
 [b,a] = butter(order,Omega_c_w,analog=True);
 Hs = tf(b,a); # Normalized
