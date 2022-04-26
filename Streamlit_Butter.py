@@ -6,6 +6,7 @@ from scipy.signal import TransferFunction as tf
 from scipy.io import loadmat
 import time
 import os
+from pathlib import Path
 
 plt.style.use('dark_background')
 colors=['#7A0BC0','#270082','#4E9F3D','#D8E9A8','#E2703A','#590995','#C62A88','#8A2BE2','#ff1493',
@@ -58,10 +59,14 @@ plt.plot(ppg_sig_final);
 #%%                   
 #---------------------  Streamlit --------------------------------
 st.title(r'Filtering PPG signals using Butterworth Low Pass Filter')
-placeholder=st.empty()
+placeholder1=st.empty()
+placeholder2=st.empty()
+placeholder3=st.empty()
 
 def display(order,signal):
-    placeholder.empty()  # Clearing elements
+    placeholder1.empty()  # Clearing elements
+    placeholder2.empty()
+    placeholder3.empty()
     
     [b,a] = butter(order,Omega_c_w,analog=True);
     Hs = tf(b,a); # Normalized Analog TF  H(s)
@@ -80,18 +85,36 @@ def display(order,signal):
     ax1.set(title='Magnitude Response of Butterworth LPF',xlabel='frequency (Hz)',
             ylabel='Magnitude');
     ax1.legend()
-    placeholder.pyplot(fig1,clear_figure=True,dpi=400)
+    with placeholder1.container():
+        st.markdown(f'<p style="color:#E2703A;font-size:26px;">Butterworth Filter of Order {order}</p>', unsafe_allow_html=True)
+        st.pyplot(fig1,dpi=400)
     
     
-    data = loadmat(f'Data\{signal}')
+    filename=Path('ppg_random_noise.mat').parents[0] / 'Data/ppg_random_noise.mat'
+    data = loadmat(filename)
+    #data = loadmat(filename)
     ppg_100hz=data[list(data.keys())[-1]][0];
-    fig2,ax2=plt.subplots();
-    ppg_sig_final=ppg_100hz[:];
-    ax2.plot(ppg_sig_final);
-    ax2.set(title='PPG Signal',xlabel='frequency (Hz)',
-            ylabel='Magnitude');
-    ax2.legend()
-    placeholder.pyplot(fig2,clear_figure=True,dpi=400)
+    
+    # Plotting PPG
+    time_sig=np.linspace(0,len(ppg_sig_final)/100,len(ppg_sig_final))
+    
+    fig2,ax2=plt.subplots(figsize=(6,4))
+    ax2.plot(time_sig,ppg_sig_final,linewidth=2,c='red')
+    ax2.set(title=f'{signal} Original',xlabel='frequency (Hz)')
+    fig2.tight_layout()
+    with placeholder2.container():
+        st.markdown('<p style="color:#E2703A;font-size:26px;">PPG Signal before filtering</p>', unsafe_allow_html=True)
+        st.pyplot(fig2,dpi=400)
+    
+    y=lfilter(num,den,ppg_sig_final);
+    fig3,ax3=plt.subplots(figsize=(6,4))
+    ax3.plot(time_sig,y,color=colors[10],lw=2);
+    ax3.set(title=f'{signal} filtered',xlabel='frequency (Hz)')
+    fig3.tight_layout()
+    with placeholder3.container():
+        st.markdown(f'<p style="color:#E2703A;font-size:26px;">PPG Signal after filtering</p>', unsafe_allow_html=True)
+        st.pyplot(fig3,dpi=400)
+
 
 with st.sidebar:
     with st.form("my_form"):
@@ -102,8 +125,9 @@ with st.sidebar:
         
         order = st.slider('Select Filter Order', n, 14, 6)
         submitted = st.form_submit_button("Submit")
-        
+
+
 if submitted:
     with st.spinner('Loading Plots !!'):
         display(order,signal)
-        
+    
