@@ -53,7 +53,7 @@ plt.title('Magnitude Response');
 files=['PPG_5sec_clean_100Hz.mat','PPG_10sec_clean_100Hz.mat','PPG_120sec_clean_100Hz.mat',
        'ppg_baseline.mat','ppg_baseline_awgn.mat','ppg_baseline_powerline.mat','ppg_random_noise.mat']
 
-data = loadmat(f'Data/{files[6]}')
+data = loadmat(f'Data/{files[4]}')
 #data=data.data;
 ppg_100hz=data[list(data.keys())[-1]][0];
 #r_num=randi(53);
@@ -96,12 +96,15 @@ plt.figure(figsize=(8,6))
 plt.plot(time_sig,ppg_sig_final,linewidth=2,c='red');
 plt.title('Signal before filtering')
 plt.tight_layout()
-plt.savefig('irst.png',dpi=400,transparent=1)
+#-------- Save Figure ---------#
+# plt.savefig('irst.png',dpi=400,transparent=1)
 
 plt.figure(figsize=(8,6))
 plt.plot(time_sig,y,color=colors[10],lw=2);
 plt.title('Signal after filtering')
 plt.tight_layout()
 # plt.grid()
-plt.savefig('lmno.png',dpi=400,transparent=1)
+
+#-------- Save Figure ---------#
+# plt.savefig('lmno.png',dpi=400,transparent=1)
 

@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 from scipy.signal import buttord,butter,freqz,bilinear,lfilter
 from scipy.signal import TransferFunction as tf
 from scipy.io import loadmat
-import time
-import os
 from pathlib import Path
 
 plt.style.use('dark_background')
@@ -32,9 +30,12 @@ Omega_c_w=(2/Td)*np.tan(2*np.pi*fc/2/fs);
 files=['PPG_5sec_clean_100Hz.mat','PPG_10sec_clean_100Hz.mat','PPG_120sec_clean_100Hz.mat',
        'ppg_baseline.mat','ppg_baseline_awgn.mat','ppg_baseline_powerline.mat','ppg_random_noise.mat']
 
-data = loadmat(f'Data/{files[6]}')
+signal_dict={'PPG_5sec_clean':0, 'PPG_10sec_clean':1, 'PPG_120sec_clean':2,'ppg_baseline':3,
+ 'ppg_baseline_awgn':4,'ppg_baseline_powerline':5,'ppg_random_noise':6}
+
+#data = loadmat(f'Data/{files[6]}')
 #data=data.data;
-ppg_100hz=data[list(data.keys())[-1]][0];
+#ppg_100hz=data[list(data.keys())[-1]][0];
 #r_num=randi(53);
 #disp(r_num);
 #ppg_data=data(r_num).ppg;
@@ -48,8 +49,8 @@ plt.figure(1);
 
 #ppg_100hz = resample(ppg_sig,4,5);
 #stem(ppg_100hz(1:100));
-ppg_sig_final=ppg_100hz[0:200];
-plt.plot(ppg_sig_final);
+#ppg_sig_final=ppg_100hz[:] if len(ppg_100hz)<1000 else ppg_100hz[:1000];
+#plt.plot(ppg_sig_final);
     
     
     
@@ -58,7 +59,8 @@ plt.plot(ppg_sig_final);
 
 #%%                   
 #---------------------  Streamlit --------------------------------
-st.title(r'Filtering PPG signals using Butterworth Low Pass Filter')
+#st.title(r'Filtering PPG signals using Butterworth Low Pass Filter')
+st.markdown(f'<p style="color:{colors[9]};font-size:38px;font-weight:800;margin-top:10px;">Filtering PPG signals using Butterworth Low Pass Filter</p>', unsafe_allow_html=True)
 placeholder1=st.empty()
 placeholder2=st.empty()
 placeholder3=st.empty()
@@ -85,34 +87,39 @@ def display(order,signal):
     ax1.set(title='Magnitude Response of Butterworth LPF',xlabel='frequency (Hz)',
             ylabel='Magnitude');
     ax1.legend()
+    ax1.axvline(x=20,ymin=0,ymax=0.69,lw=0.5)
+    ax1.axhline(y=0.707,xmin=0, xmax=20.5/50,lw=0.5)
     with placeholder1.container():
-        st.markdown(f'<p style="color:#E2703A;font-size:26px;">Butterworth Filter of Order {order}</p>', unsafe_allow_html=True)
+        st.markdown(f'<p style="color:{colors[4]};font-size:24px;margin-top:30px;padding-top:40px;padding-bottom:10px;border-top:1px solid white">Butterworth Filter of Order {order}</p>', unsafe_allow_html=True)
         st.pyplot(fig1,dpi=400)
     
-    
-    filename=Path('ppg_random_noise.mat').parents[0] / 'Data/ppg_random_noise.mat'
+    file_number=int(signal_dict[f'{signal}'])
+    file=files[file_number]
+    filename=Path(file).parents[0] / f'Data/{file}'
+    #st.write(filename)
     data = loadmat(filename)
     #data = loadmat(filename)
     ppg_100hz=data[list(data.keys())[-1]][0];
+    ppg_100hz=ppg_100hz[:] if len(ppg_100hz)<3000 else ppg_100hz[:3000]
     
     # Plotting PPG
-    time_sig=np.linspace(0,len(ppg_sig_final)/100,len(ppg_sig_final))
+    time_sig=np.linspace(0,len(ppg_100hz)/100,len(ppg_100hz))
     
     fig2,ax2=plt.subplots(figsize=(6,4))
-    ax2.plot(time_sig,ppg_sig_final,linewidth=2,c='red')
-    ax2.set(title=f'{signal} Original',xlabel='frequency (Hz)')
+    ax2.plot(time_sig,ppg_100hz,linewidth=1,c='red')
+    ax2.set(title=f'{signal} : Original',xlabel='time (sec)')
     fig2.tight_layout()
     with placeholder2.container():
-        st.markdown('<p style="color:#E2703A;font-size:26px;">PPG Signal before filtering</p>', unsafe_allow_html=True)
+        st.markdown('<p style="color:#E2703A;font-size:24px;margin-top:40px;padding-top:40px;padding-bottom:10px;border-top:1px solid white">PPG Signal before filtering</p>', unsafe_allow_html=True)
         st.pyplot(fig2,dpi=400)
     
-    y=lfilter(num,den,ppg_sig_final);
+    y=lfilter(num,den,ppg_100hz);
     fig3,ax3=plt.subplots(figsize=(6,4))
-    ax3.plot(time_sig,y,color=colors[10],lw=2);
-    ax3.set(title=f'{signal} filtered',xlabel='frequency (Hz)')
+    ax3.plot(time_sig,y,color=colors[10],lw=1);
+    ax3.set(title=f'{signal} : filtered',xlabel='time (sec)')
     fig3.tight_layout()
     with placeholder3.container():
-        st.markdown(f'<p style="color:#E2703A;font-size:26px;">PPG Signal after filtering</p>', unsafe_allow_html=True)
+        st.markdown(f'<p style="color:#E2703A;font-size:24px;margin-top:40px;padding-top:40px;padding-bottom:10px;border-top:1px solid white">PPG Signal after filtering</p>', unsafe_allow_html=True)
         st.pyplot(fig3,dpi=400)
 
 
