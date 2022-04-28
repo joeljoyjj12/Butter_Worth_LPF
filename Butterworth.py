@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import buttord,butter,freqz,bilinear,lfilter
+from scipy.signal import buttord,butter,freqz,bilinear,lfilter,filtfilt
 from scipy.signal import TransferFunction as tf
 from scipy.io import loadmat
 
@@ -25,7 +25,7 @@ PCF_A = (2/Td)*np.tan(PCF/2); # Using formula for Bilinear Transformation [(2/Td
 SCF_A = (2/Td)*np.tan(SCF/2);
 [n,Wn] = buttord(PCF_A,SCF_A,alpha_p,alpha_s,analog=True);
 
-fc=20;
+fc=10;
 Omega_c_w=(2/Td)*np.tan(2*np.pi*fc/2/fs);
 
 # [Bn,An] = butter(1,Omega_c_w,analog=True); 
@@ -45,6 +45,7 @@ _,Hw = freqz(num,den,worN=w)
 Hw_mag = np.absolute(Hw);
 plt.figure(1)
 plt.grid()
+#plt.plot(w/np.pi*fs/2,Hw_mag) 
 plt.plot(w/np.pi*fs/2,Hw_mag) 
 plt.title('Magnitude Response');
 
@@ -70,41 +71,75 @@ plt.figure(1);
 #ppg_100hz = resample(ppg_sig,4,5);
 #stem(ppg_100hz(1:100));
 ppg_sig_final=ppg_100hz[0:200];
-plt.plot(ppg_sig_final);
+#plt.plot(ppg_sig_final);
 
 #%%
 #----------------------- Signal filtering ------------------------------#
 time_sig=np.linspace(0,len(ppg_sig_final)/100,len(ppg_sig_final))
 
-fft_len=len(ppg_sig_final)<<1;
+fft_len=int(np.ceil(np.log2(len(ppg_sig_final))));
 plt.figure(17);
-fft_bef_filt=np.absolute(np.fft.fft(ppg_sig_final,2^fft_len));
-plt.figure()
-plt.plot(fft_bef_filt);
-#stem(fft_bef_filt);
-plt.title('FFT Before Filtering')
+fft_bef_filt=np.absolute(np.fft.fft(ppg_sig_final,2**fft_len));
 
-##
-y=lfilter(num,den,ppg_sig_final);
-plt.figure(figsize=(8,6));
-fft_aft_filt=np.absolute(np.fft.fft(y,2^fft_len));
-plt.plot(fft_aft_filt);
-#stem(fft_aft_filt);
-plt.title('FFT After Filtering')
+res_fft=fs/len(fft_bef_filt) # Resolution
+x_fft=np.arange(0,len(fft_bef_filt))*res_fft
 
+# FFT before filtering
 plt.figure(figsize=(8,6))
-plt.plot(time_sig,ppg_sig_final,linewidth=2,c='red');
+plt.plot(x_fft,fft_bef_filt,c=f'{colors[10]}');
+plt.xlabel('Frequency (Hz)',fontsize=9)
+plt.ylabel('X(k)',fontsize=9)
+plt.title('FFT Before Filtering')
+plt.tight_layout()
+plt.savefig('fft_bef.png',dpi=400,transparent=0)
+
+# Filtering and FFT
+y=lfilter(num,den,ppg_sig_final)
+fft_aft_filt=np.absolute(np.fft.fft(y,2**fft_len));
+
+# FFT after filtering
+plt.figure(figsize=(8,6));
+plt.plot(x_fft,fft_aft_filt,c=f'{colors[10]}');
+plt.xlabel('Frequency (Hz)',fontsize=9)
+plt.ylabel('X(k)',fontsize=9)
+plt.title('FFT After Filtering')
+plt.tight_layout()
+plt.savefig('fft_aft.png',dpi=400,transparent=0)
+
+# Signal before filtering
+plt.figure(figsize=(8,6))
+plt.plot(time_sig,ppg_sig_final,linewidth=1.5,c='red');
 plt.title('Signal before filtering')
 plt.tight_layout()
-#-------- Save Figure ---------#
-# plt.savefig('irst.png',dpi=400,transparent=1)
+plt.xlabel('time (sec)',fontsize=10)
+plt.ylabel('PPG',fontsize=10)
+plt.tight_layout()
+plt.savefig('sig_bef.png',dpi=400)
 
+# Signal after filtering
 plt.figure(figsize=(8,6))
-plt.plot(time_sig,y,color=colors[10],lw=2);
+plt.plot(time_sig,y,color=colors[10],lw=1.5);
+plt.xlabel('time (sec)',fontsize=10)
+plt.ylabel('PPG',fontsize=10)
+plt.tight_layout()
 plt.title('Signal after filtering')
 plt.tight_layout()
-# plt.grid()
+plt.savefig('sig_aft.png',dpi=400)
 
-#-------- Save Figure ---------#
-# plt.savefig('lmno.png',dpi=400,transparent=1)
 
+#----------   Closer look at freq from 20 to 50Hz  ---------------
+start_ind=int(20/res_fft)
+end_ind=int(50/res_fft)
+
+plt.figure(figsize=(8,6))
+
+plt.plot(x_fft[start_ind+1:end_ind],fft_bef_filt[start_ind+1:end_ind],label='FFT Original',c=f'{colors[1]}')
+plt.title('FFT 20 to 50')
+
+plt.plot(x_fft[start_ind+1:end_ind],fft_aft_filt[start_ind+1:end_ind],c='r',label='FFT Filtered')
+plt.title('FFT 20 Hz to 50 Hz')
+plt.xlabel('Frequency (Hz)',fontsize=10)
+plt.ylabel('X(k)',fontsize=10)
+plt.tight_layout()
+plt.legend()
+plt.savefig('fft_comparison_20_50.png',dpi=400,transparent=0)
